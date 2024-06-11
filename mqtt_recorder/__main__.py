@@ -1,6 +1,8 @@
-from mqtt_recorder.recorder import MqttRecorder, SslContext
 import argparse
 import time
+from logging import DEBUG
+
+from mqtt_recorder.recorder import MqttRecorder, SslContext, logger
 
 parser = argparse.ArgumentParser(
     prog='mqtt_recorder',
@@ -129,6 +131,12 @@ parser.add_argument(
          'Should be used to record binary message payloads'
 )
 
+parser.add_argument(
+    '--debug',
+    action='store_false',
+    help='debug logging',
+)
+
 
 def wait_for_keyboard_interrupt():
     try:
@@ -150,6 +158,9 @@ def main():
         args.password,
         sslContext,
         args.encode_b64)
+    if args.debug:
+        logger.setLevel(DEBUG)
+        logger.info('Log level set to DEBUG')
     if args.mode == 'record':
         recorder.start_recording(qos=args.qos, topics_file=args.topics)
         wait_for_keyboard_interrupt()
