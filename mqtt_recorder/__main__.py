@@ -105,9 +105,8 @@ parser.add_argument(
 
 parser.add_argument(
     '--loop',
-    type=bool,
+    action='store_true',
     help='looping replay',
-    default=False
 )
 
 parser.add_argument(
@@ -133,7 +132,7 @@ parser.add_argument(
 
 parser.add_argument(
     '--debug',
-    action='store_false',
+    action='store_true',
     help='debug logging',
 )
 
@@ -148,7 +147,7 @@ def wait_for_keyboard_interrupt():
 
 def main():
     args = parser.parse_args()
-    sslContext = SslContext(args.enable_ssl, args.ca_cert, args.certfile, args.keyfile, args.tls_insecure)
+    ssl_context = SslContext(args.enable_ssl, args.ca_cert, args.certfile, args.keyfile, args.tls_insecure)
     recorder = MqttRecorder(
         args.host,
         args.port,
@@ -156,7 +155,7 @@ def main():
         args.file,
         args.username,
         args.password,
-        sslContext,
+        ssl_context,
         args.encode_b64)
     if args.debug:
         logger.setLevel(DEBUG)

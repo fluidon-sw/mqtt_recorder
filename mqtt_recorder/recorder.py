@@ -43,7 +43,7 @@ class MqttRecorder:
         self.__client.connect(host=host, port=port)
         self.__client.loop_start()
 
-    def start_recording(self, topics_file: str, qos: int=0):
+    def start_recording(self, topics_file: str, qos: int = 0):
         self.__last_message_time = time.time()
         if topics_file:
             with open(topics_file) as json_file:
@@ -83,7 +83,9 @@ class MqttRecorder:
                         retain=retain,
                     )
                     message_time = time.time()
-                logger.info(f'End of replay, elapsed time {message_time - start_time} s')
+                logger.info(f'End of replay')
+                logger.info(f'....record time {float(messages[-1][4]) - rec_start_time} s')
+                logger.info(f'...elapsed time {message_time - start_time} s')
                 if loop:
                     logger.info('Restarting replay')
                     time.sleep(1)
