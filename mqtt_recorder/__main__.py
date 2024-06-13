@@ -136,6 +136,13 @@ parser.add_argument(
     help='debug logging',
 )
 
+parser.add_argument(
+    '--timestamp_delay',
+    type=float,
+    help='Update timestamps, starting with current time plus timestamp_delay in s',
+    default=0.0
+)
+
 
 def wait_for_keyboard_interrupt():
     try:
@@ -147,7 +154,13 @@ def wait_for_keyboard_interrupt():
 
 def main():
     args = parser.parse_args()
-    ssl_context = SslContext(args.enable_ssl, args.ca_cert, args.certfile, args.keyfile, args.tls_insecure)
+    ssl_context = SslContext(
+        args.enable_ssl,
+        args.ca_cert,
+        args.certfile,
+        args.keyfile,
+        args.tls_insecure
+    )
     recorder = MqttRecorder(
         args.host,
         args.port,
@@ -156,7 +169,9 @@ def main():
         args.username,
         args.password,
         ssl_context,
-        args.encode_b64)
+        args.encode_b64,
+        args.timestamp_delay,
+    )
     if args.debug:
         logger.setLevel(DEBUG)
         logger.info('Log level set to DEBUG')

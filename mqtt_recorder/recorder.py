@@ -4,12 +4,18 @@ import time
 import base64
 import csv
 import json
+from datetime import datetime, timedelta
 
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('MQTTRecorder')
+
+date_formats = [
+    '%Y-%m-%dT%H:%M:%S.%f',
+    '%Y-%m-%dT%H:%M:%S.%f%z',
+]
 
 
 class SslContext:
@@ -25,12 +31,13 @@ class SslContext:
 class MqttRecorder:
 
     def __init__(self, host: str, port: int, client_id: str, file_name: str, username: str,
-                 password: str, ssl_context: SslContext, encode_b64: bool):
+                 password: str, ssl_context: SslContext, encode_b64: bool, timestamp_delay: float):
         self.__recording = False
         self.__messages = list()
         self.__file_name = file_name
         self.__last_message_time = None
         self.__encode_b64 = encode_b64
+        self.__timestamp_delay = timestamp_delay
         self.__client = mqtt.Client(client_id=client_id)
         self.__client.on_connect = self.__on_connect
         self.__client.on_message = self.__on_message
@@ -62,6 +69,40 @@ class MqttRecorder:
             logger.info('Starting replay')
             reader = csv.reader(csvfile)
             messages = list(reader)
+
+            if self.__timestamp_delay:
+                logger.info("Starting timestamp update")
+                tz_info = datetime.now().astimezone().tzinfo
+                dt_delay = timedelta(seconds=self.__timestamp_delay)
+                for row in messages:
+                    pos = 0
+                    while True:
+                        pos = row[1].find('timestamp', pos)
+                        if pos == -1:
+                            break
+                        pos = pos + 10
+                        pos_start = row[1].find('"', pos) + 1  # start position of time string
+                        pos_end = row[1].find('"', pos_start)
+                        time_str = row[1][pos_start:pos_end]
+
+                        for date_format in date_formats:
+                            try:
+                                dt = datetime.strptime(time_str, date_format)
+                                dt = dt.astimezone(tz=tz_info).replace(tzinfo=None)
+                            except ValueError:
+                                pass
+                            else:
+                                break
+                        if first_timestamp:
+                            dt_offset = datetime.now() + dt_delay - dt
+                            first_timestamp = False
+                        new_time_str = str(dt + dt_offset)
+                        row[1] = row[1].replace(time_str, new_time_str, 1)
+
+                    row[4] = str(
+                        datetime.timestamp(datetime.fromtimestamp(float(row[4])) + dt_offset)
+                    )
+                logger.info("... done")
 
             while True:
                 first_message = True
