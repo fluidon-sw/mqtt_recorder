@@ -12,10 +12,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger('MQTTRecorder')
 
-date_formats = [
+date_formats_in = [
+    '%Y-%m-%dT%H:%M:%S.%f%Z',
+    '%Y-%m-%d %H:%M:%S.%f',
     '%Y-%m-%dT%H:%M:%S.%f',
-    '%Y-%m-%dT%H:%M:%S.%f%z',
 ]
+
+
+def strdateout(dt: datetime) -> str:
+    return dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
 
 
 class SslContext:
@@ -70,9 +75,9 @@ class MqttRecorder:
             reader = csv.reader(csvfile)
             messages = list(reader)
 
-            if self.__timestamp_delay:
-                logger.info("Starting timestamp update")
-                tz_info = datetime.now().astimezone().tzinfo
+            while True:
+                logger.info(f"Starting timestamp update, delay {self.__timestamp_delay} s")
+                first_timestamp = True
                 dt_delay = timedelta(seconds=self.__timestamp_delay)
                 for row in messages:
                     pos = 0
@@ -85,18 +90,23 @@ class MqttRecorder:
                         pos_end = row[1].find('"', pos_start)
                         time_str = row[1][pos_start:pos_end]
 
-                        for date_format in date_formats:
+                        for date_format in date_formats_in:
                             try:
                                 dt = datetime.strptime(time_str, date_format)
-                                dt = dt.astimezone(tz=tz_info).replace(tzinfo=None)
                             except ValueError:
                                 pass
                             else:
                                 break
+                        if not dt:
+                            logger.error('Unknown time stamp format')
+                            exit(1)
                         if first_timestamp:
-                            dt_offset = datetime.now() + dt_delay - dt
+                            dt_offset = datetime.utcnow() + dt_delay - dt
+
+                            logger.debug(f'dt = {dt}')
+                            logger.debug(f'dt_offset = {dt_offset}')
                             first_timestamp = False
-                        new_time_str = str(dt + dt_offset)
+                        new_time_str = strdateout(dt + dt_offset)
                         row[1] = row[1].replace(time_str, new_time_str, 1)
 
                     row[4] = str(
@@ -104,13 +114,19 @@ class MqttRecorder:
                     )
                 logger.info("... done")
 
-            while True:
                 first_message = True
                 rec_start_time = float(messages[0][4])
+                logger.debug(f'rec_start_time = {rec_start_time}')
+                logger.debug(f'time = {time.time()}')
+                logger.info(f'Start of replay')
                 for row in messages:
                     mqtt_payload = decode_payload(row[1], self.__encode_b64)
                     retain = False if row[3] == '0' else True
                     if first_message:
+                        logger.debug(
+                            f'First message, sleep time {max(rec_start_time - time.time(), 0.0)}')
+                        if self.__timestamp_delay:
+                            time.sleep(max(rec_start_time - time.time(), 0.0))
                         start_time = time.time()
                         delta_t = start_time - rec_start_time
                         first_message = False
