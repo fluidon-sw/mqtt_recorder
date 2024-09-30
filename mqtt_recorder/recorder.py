@@ -13,7 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger('MQTTRecorder')
 
 date_formats_in = [
-    '%Y-%m-%dT%H:%M:%S.%f%Z',
+    '%Y-%m-%dT%H:%M:%S.%fZ',
     '%Y-%m-%d %H:%M:%S.%f',
     '%Y-%m-%dT%H:%M:%S.%f',
 ]
