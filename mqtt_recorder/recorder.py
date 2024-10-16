@@ -20,7 +20,7 @@ date_formats_in = [
 
 
 def strdateout(dt: datetime) -> str:
-    return dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 
 class SslContext:
