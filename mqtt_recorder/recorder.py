@@ -38,6 +38,7 @@ class MqttRecorder:
     def __init__(self, host: str, port: int, client_id: str, file_name: str, username: str,
                  password: str, ssl_context: SslContext, encode_b64: bool, timestamp_delay: float):
         self.connected = False
+        self.recieving = False
         self.__recording = False
         self.__messages = list()
         self.__file_name = file_name
@@ -166,6 +167,8 @@ class MqttRecorder:
         logger.info("Connected to broker!")
 
     def __on_message(self, client, userdata, msg):
+        self.recieving = True
+
         def encode_payload(payload, encode_b64):
             return base64.b64encode(msg.payload).decode() if encode_b64 else payload.decode()
 
