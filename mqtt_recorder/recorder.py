@@ -37,6 +37,7 @@ class MqttRecorder:
 
     def __init__(self, host: str, port: int, client_id: str, file_name: str, username: str,
                  password: str, ssl_context: SslContext, encode_b64: bool, timestamp_delay: float):
+        self.connected = False
         self.__recording = False
         self.__messages = list()
         self.__file_name = file_name
@@ -151,6 +152,7 @@ class MqttRecorder:
 
     def stop_recording(self):
         self.__client.loop_stop()
+        self.connected = False
         logger.info('Recording stopped')
         self.__recording = False
         logger.info('Saving messages to output file')
@@ -160,6 +162,7 @@ class MqttRecorder:
                 writer.writerow(message)
 
     def __on_connect(self, client, userdata, flags, rc):
+        self.connected = True
         logger.info("Connected to broker!")
 
     def __on_message(self, client, userdata, msg):
