@@ -181,11 +181,6 @@ class MqttRecorder:
                     "1st message received - Topic: %s QoS: %s Retain: %s",
                     msg.topic, msg.qos, msg.retain
                 )
-            else:
-                logger.debug(
-                    "Message %i received - Topic: %s QoS: %s Retain: %s",
-                    self.rec_message_count, msg.topic, msg.qos, msg.retain
-                )
             time_now = time.time()
             time_delta = time_now - self.__last_message_time
             payload = encode_payload(msg.payload, self.__encode_b64)
